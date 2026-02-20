@@ -1,78 +1,173 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+import os
+import matplotlib.pyplot as plt
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 
 # -------------------------------
-# Title
+# Page Config
 # -------------------------------
-st.title("📚 Library Management System")
-st.subheader("Frequent Library User Prediction")
+st.set_page_config(page_title="NSTI Smart Library AI", layout="wide")
 
 # -------------------------------
-# Load Dataset
+# Background
 # -------------------------------
-@st.cache_data
-def load_data():
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-image: url("https://images.unsplash.com/photo-1507842217343-583bb7270b66");
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    .block-container {
+        background: rgba(255,255,255,0.92);
+        padding: 30px;
+        border-radius: 20px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# -------------------------------
+# Login System
+# -------------------------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+def login():
+    st.title("🔐 Library Admin Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if username == "admin" and password == "1234":
+            st.session_state.logged_in = True
+            st.success("Login Successful ✅")
+        else:
+            st.error("Invalid Credentials ❌")
+
+if not st.session_state.logged_in:
+    login()
+    st.stop()
+
+# -------------------------------
+# Main Dashboard
+# -------------------------------
+st.title("📚 NSTI Smart Library AI Dashboard")
+
+# -------------------------------
+# Upload or Load Default Data
+# -------------------------------
+uploaded_file = st.sidebar.file_uploader("📂 Upload Dataset (CSV)", type=["csv"])
+
+if uploaded_file:
+    data = pd.read_csv(uploaded_file)
+else:
     data = pd.read_csv("library_data_100.csv")
-    return data
 
-data = load_data()
-
-st.write("### Dataset Preview")
-st.dataframe(data.head())
-
-# -------------------------------
-# Encoding Target Column
-# -------------------------------
+# Encode Target
 le = LabelEncoder()
 data["FrequentUser"] = le.fit_transform(data["FrequentUser"])
-# Yes -> 1, No -> 0
 
-# -------------------------------
-# Features & Target
-# -------------------------------
 X = data[["StudentAge", "BooksIssued", "LateReturns", "MembershipYears"]]
 y = data["FrequentUser"]
 
-# -------------------------------
-# Train-Test Split
-# -------------------------------
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
 # -------------------------------
-# Model Training
+# Model Selection
 # -------------------------------
-model = LogisticRegression()
+model_choice = st.sidebar.selectbox(
+    "Select Model",
+    ["Random Forest", "Logistic Regression"]
+)
+
+if model_choice == "Random Forest":
+    model = RandomForestClassifier()
+else:
+    model = LogisticRegression()
+
 model.fit(X_train, y_train)
 
+# Accuracy
+accuracy = model.score(X_test, y_test)
+st.metric("Model Accuracy", f"{accuracy*100:.2f}%")
+
 # -------------------------------
-# Sidebar Inputs
+# User Input
 # -------------------------------
 st.sidebar.header("Enter Student Details")
 
-age = st.sidebar.number_input("Student Age", min_value=10, max_value=60, value=20)
-books = st.sidebar.number_input("Books Issued", min_value=0, max_value=50, value=5)
-late = st.sidebar.number_input("Late Returns", min_value=0, max_value=20, value=1)
-membership = st.sidebar.number_input("Membership Years", min_value=0, max_value=10, value=1)
+age = st.sidebar.slider("Student Age", 10, 60, 20)
+books = st.sidebar.slider("Books Issued", 0, 50, 5)
+late = st.sidebar.slider("Late Returns", 0, 20, 1)
+membership = st.sidebar.slider("Membership Years", 0, 10, 1)
 
 # -------------------------------
-# Prediction
+# Prediction + Save History
 # -------------------------------
 if st.sidebar.button("Predict"):
-    input_data = [[age, books, late, membership]]
+
+    input_data = np.array([[age, books, late, membership]])
     prediction = model.predict(input_data)[0]
+    probability = model.predict_proba(input_data)[0][1]
 
-    if prediction == 1:
-        st.success("✅ Prediction: Frequent Library User")
+    result = "Frequent User" if prediction == 1 else "Not Frequent"
+
+    st.subheader("Prediction Result")
+    st.success(result)
+    st.info(f"Confidence: {probability*100:.2f}%")
+
+    # Save to CSV
+    history = pd.DataFrame({
+        "Age": [age],
+        "BooksIssued": [books],
+        "LateReturns": [late],
+        "MembershipYears": [membership],
+        "Prediction": [result],
+        "Confidence": [probability]
+    })
+
+    if os.path.exists("prediction_history.csv"):
+        history.to_csv("prediction_history.csv", mode='a', header=False, index=False)
     else:
-        st.error("❌ Prediction: Not a Frequent Library User")
+        history.to_csv("prediction_history.csv", index=False)
 
 # -------------------------------
-# Model Accuracy
+# Show Prediction History
 # -------------------------------
-accuracy = model.score(X_test, y_test)
-st.write(f"### 📊 Model Accuracy: {accuracy * 100:.2f}%")
+st.subheader("📜 Prediction History")
+
+if os.path.exists("prediction_history.csv"):
+    history_data = pd.read_csv("prediction_history.csv")
+    st.dataframe(history_data)
+
+    st.download_button(
+        label="📥 Download History",
+        data=history_data.to_csv(index=False),
+        file_name="library_prediction_history.csv",
+        mime="text/csv"
+    )
+else:
+    st.write("No history available yet.")
+
+# -------------------------------
+# Feature Importance (RF Only)
+# -------------------------------
+if model_choice == "Random Forest":
+    st.subheader("📊 Feature Importance")
+    importances = model.feature_importances_
+
+    fig = plt.figure()
+    plt.bar(X.columns, importances)
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
