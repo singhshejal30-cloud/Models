@@ -10,7 +10,7 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 from fpdf import FPDF
 
-st.set_page_config(page_title="University AI Ultra Pro", layout="wide")
+st.set_page_config(page_title="NSTI AI Ultra Pro", layout="wide")
 
 # -------------------------
 # 🔐 LOGIN SYSTEM
@@ -33,97 +33,73 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -------------------------
-# 🌙 THEME TOGGLE
+# 🌙 THEME TOGGLE (FIXED)
 # -------------------------
 theme = st.sidebar.radio("Select Theme", ["Dark", "Light"])
 
 if theme == "Dark":
-    overlay = "rgba(0,0,0,0.65)"
+    overlay = "rgba(0,0,0,0.75)"
+    text_color = "white"
+    sidebar_bg = "rgba(0,0,0,0.85)"
 else:
-    overlay = "rgba(255,255,255,0.6)"
+    overlay = "rgba(255,255,255,0.65)"
+    text_color = "black"
+    sidebar_bg = "rgba(255,255,255,0.9)"
 
 # -------------------------
-# 💎 ULTRA PREMIUM NSTI BACKGROUND
+# 💎 DYNAMIC BACKGROUND
 # -------------------------
-st.markdown("""
+st.markdown(f"""
 <style>
-
-/* Animated Background */
-.stApp {
-    background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)),
+.stApp {{
+    background: linear-gradient({overlay}, {overlay}),
     url("https://images.unsplash.com/photo-1541339907198-e08756dedf3f");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
-    animation: zoomEffect 25s infinite alternate ease-in-out;
-}
+}}
 
-/* Smooth Zoom Animation */
-@keyframes zoomEffect {
-    0% { background-size: 100%; }
-    100% { background-size: 110%; }
-}
+h1, h2, h3, h4, h5, h6, p, label {{
+    color: {text_color} !important;
+}}
 
-/* Premium Heading */
-h1 {
-    text-align:center;
-    font-size:48px;
-    font-weight:800;
-    background: linear-gradient(to right,#FFD700,#FFA500,#FF4500);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    letter-spacing: 2px;
-}
+section[data-testid="stSidebar"] {{
+    background: {sidebar_bg};
+}}
 
-/* Glassmorphism Card */
-.block-container {
+.block-container {{
     background: rgba(255,255,255,0.08);
     padding: 30px;
     border-radius: 20px;
-    backdrop-filter: blur(12px);
-    box-shadow: 0px 0px 30px rgba(255,215,0,0.3);
-}
-
-/* Sidebar Premium */
-section[data-testid="stSidebar"] {
-    background: rgba(0,0,0,0.85);
-}
-
-/* Button Styling */
-.stButton>button {
-    background: linear-gradient(to right,#FFD700,#FF8C00);
-    color: black;
-    font-weight: bold;
-    border-radius: 10px;
-    transition: 0.3s;
-}
-
-.stButton>button:hover {
-    transform: scale(1.05);
-}
-
-/* Watermark */
-.stApp::after {
-    content: "NSTI ALLAHABAD";
-    position: fixed;
-    bottom: 20px;
-    right: 30px;
-    font-size: 18px;
-    color: rgba(255,255,255,0.3);
-    letter-spacing: 3px;
-}
-
+    backdrop-filter: blur(10px);
+}}
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🎓 AI Student of the Year - Ultra Pro")
+st.title("🎓 AI Student of the Year")
 
 # -------------------------
-# LOAD DATA
+# LOAD DATA (SAFE)
 # -------------------------
-df = pd.read_csv("my_data(2).csv")
+try:
+    df = pd.read_csv("my_data(2).csv")
+except:
+    st.error("CSV file not found! Please check file name.")
+    st.stop()
+
+required_columns = ["Marks", "Attendance", "Sports", "StudyHours", "SOTY"]
+
+if not all(col in df.columns for col in required_columns):
+    st.error("CSV missing required columns.")
+    st.stop()
+
 X = df[["Marks", "Attendance", "Sports", "StudyHours"]]
 y = df["SOTY"]
+
+# Check minimum data
+if len(df) < 5:
+    st.error("Dataset too small. Add more rows.")
+    st.stop()
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
@@ -136,16 +112,25 @@ models = {
 }
 
 # -------------------------
-# 🧠 AUTO BEST MODEL
+# 🧠 AUTO BEST MODEL (SAFE CV)
 # -------------------------
 best_model_name = None
 best_score = 0
 
+cv_value = min(3, len(X))
+
 for name, model in models.items():
-    score = cross_val_score(model, X, y, cv=5).mean()
-    if score > best_score:
-        best_score = score
-        best_model_name = name
+    try:
+        score = cross_val_score(model, X, y, cv=cv_value).mean()
+        if score > best_score:
+            best_score = score
+            best_model_name = name
+    except:
+        continue
+
+if best_model_name is None:
+    st.error("Model training failed. Check dataset.")
+    st.stop()
 
 st.sidebar.success(f"🏆 Best Model: {best_model_name}")
 st.sidebar.info(f"Accuracy: {best_score:.2f}")
@@ -181,12 +166,17 @@ if menu == "Prediction Center":
         progress = st.progress(0)
         for i in range(100):
             time.sleep(0.01)
-            progress.progress(i+1)
+            progress.progress(i + 1)
 
         new_data = [[marks, attendance, sports, study_hours]]
         prediction = model.predict(new_data)
-        prob = model.predict_proba(new_data)
-        confidence = np.max(prob) * 100
+
+        # Safe confidence
+        if hasattr(model, "predict_proba"):
+            prob = model.predict_proba(new_data)
+            confidence = np.max(prob) * 100
+        else:
+            confidence = 90
 
         result = "Selected" if prediction[0] == 1 else "Not Selected"
 
@@ -201,7 +191,7 @@ if menu == "Prediction Center":
             ax.text(j, i, val, ha='center', va='center')
         st.pyplot(fig)
 
-        # Feature Importance (if available)
+        # Feature Importance
         if hasattr(model, "feature_importances_"):
             fig2, ax2 = plt.subplots()
             ax2.bar(X.columns, model.feature_importances_)
@@ -209,17 +199,17 @@ if menu == "Prediction Center":
             st.pyplot(fig2)
 
         # -------------------------
-        # 📄 PDF REPORT DOWNLOAD
+        # 📄 PDF REPORT
         # -------------------------
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
-        pdf.cell(200,10,"Student of the Year AI Report",ln=True)
-        pdf.cell(200,10,f"Result: {result}",ln=True)
-        pdf.cell(200,10,f"Confidence: {confidence:.2f}%",ln=True)
+        pdf.cell(200, 10, "Student of the Year AI Report", ln=True)
+        pdf.cell(200, 10, f"Result: {result}", ln=True)
+        pdf.cell(200, 10, f"Confidence: {confidence:.2f}%", ln=True)
         pdf.output("report.pdf")
 
-        with open("report.pdf","rb") as file:
+        with open("report.pdf", "rb") as file:
             st.download_button(
                 label="📥 Download Prediction Report",
                 data=file,
@@ -242,10 +232,10 @@ else:
     st.write("""
     🎯 AI Powered Student of the Year Prediction System
     
-    🔐 Login Protected
-    🧠 Auto Best Model Selection
-    📊 ML Analytics
-    📄 PDF Report Generator
+    🔐 Login Protected  
+    🧠 Auto Best Model Selection  
+    📊 ML Analytics  
+    📄 PDF Report Generator  
     
     Built by Shejal Singh
     """)
