@@ -43,31 +43,76 @@ else:
     overlay = "rgba(255,255,255,0.6)"
 
 # -------------------------
-# 🎨 PREMIUM BACKGROUND
+# 💎 ULTRA PREMIUM NSTI BACKGROUND
 # -------------------------
-st.markdown(f"""
+st.markdown("""
 <style>
-.stApp {{
-    background-image: linear-gradient({overlay}, {overlay}),
+
+/* Animated Background */
+.stApp {
+    background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)),
     url("https://images.unsplash.com/photo-1541339907198-e08756dedf3f");
     background-size: cover;
+    background-position: center;
     background-attachment: fixed;
-}}
+    animation: zoomEffect 25s infinite alternate ease-in-out;
+}
 
-h1 {{
+/* Smooth Zoom Animation */
+@keyframes zoomEffect {
+    0% { background-size: 100%; }
+    100% { background-size: 110%; }
+}
+
+/* Premium Heading */
+h1 {
     text-align:center;
-    font-size:45px;
-    background: linear-gradient(to right,#00f2fe,#4facfe);
+    font-size:48px;
+    font-weight:800;
+    background: linear-gradient(to right,#FFD700,#FFA500,#FF4500);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
-}}
+    letter-spacing: 2px;
+}
 
-.block-container {{
-    background: rgba(255,255,255,0.1);
-    padding:20px;
-    border-radius:20px;
-    backdrop-filter: blur(10px);
-}}
+/* Glassmorphism Card */
+.block-container {
+    background: rgba(255,255,255,0.08);
+    padding: 30px;
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0px 0px 30px rgba(255,215,0,0.3);
+}
+
+/* Sidebar Premium */
+section[data-testid="stSidebar"] {
+    background: rgba(0,0,0,0.85);
+}
+
+/* Button Styling */
+.stButton>button {
+    background: linear-gradient(to right,#FFD700,#FF8C00);
+    color: black;
+    font-weight: bold;
+    border-radius: 10px;
+    transition: 0.3s;
+}
+
+.stButton>button:hover {
+    transform: scale(1.05);
+}
+
+/* Watermark */
+.stApp::after {
+    content: "NSTI ALLAHABAD";
+    position: fixed;
+    bottom: 20px;
+    right: 30px;
+    font-size: 18px;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 3px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
