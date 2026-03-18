@@ -95,13 +95,14 @@ color:black !important;
 font-weight:bold;
 }
 
-/* Dropdown menu items */
-
-div[role="listbox"]{
-color:black !important;
-font-weight:bold;
+/* Dropdown expanded box background */
+div[data-baseweb="select"] > div {
+    background-color: white !important;
 }
 
+ div[data-baseweb="popover"] * {
+    color: black !important;
+} 
 /* Buttons */
 
 .stButton>button{
