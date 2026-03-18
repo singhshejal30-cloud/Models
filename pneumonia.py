@@ -1,44 +1,4 @@
 
-# # ---------------- IMPORT LIBRARIES ----------------
-# import streamlit as st
-# import numpy as np
-# import tensorflow as tf
-# from PIL import Image
-
-# # ---------------- LOAD MODEL ----------------
-# model = tf.keras.models.load_model("pneumonia_model.h5")
-
-# # ---------------- TITLE ----------------
-# st.title("🫁 Pneumonia Detection using AI")
-# st.write("Upload Chest X-ray Image to Predict Pneumonia")
-
-# # ---------------- IMAGE UPLOAD ----------------
-# uploaded_file = st.file_uploader("Upload X-ray Image", type=["jpg","png","jpeg"])
-
-# if uploaded_file is not None:
-
-#     # ---------------- LOAD IMAGE ----------------
-#     img = Image.open(uploaded_file)
-
-#     st.image(img, caption="Uploaded Image", use_column_width=True)
-
-#     # ---------------- PREPROCESS IMAGE ----------------
-#     img = img.convert("RGB")        # convert grayscale to RGB
-#     img = img.resize((224,224))    # resize for model
-    
-#     img = np.array(img) / 255.0    # normalization
-    
-#     img = img.reshape(1,224,224,3)
-
-#     # ---------------- PREDICTION ----------------
-#     prediction = model.predict(img)
-
-#     if prediction[0][0] > 0.5:
-#         st.error("⚠️ Pneumonia Detected")
-#     else:
-#         st.success("✅ Normal")
-
-
 # ---------------- IMPORT LIBRARIES ----------------
 import streamlit as st
 import numpy as np
